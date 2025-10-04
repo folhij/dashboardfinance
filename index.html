@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Финансовый Дашборд</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root{
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --accent: #3b82f6;
+      --muted: #6b7280;
+      --pos: #16a34a;
+      --neg: #ef4444;
+      font-family: Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:#111827}
+    .app{min-height:100vh;display:flex;flex-direction:column}
+    .header{display:flex;align-items:center;justify-content:space-between;
+      padding:18px 24px;background:#fff;border-bottom:1px solid #e6eef8;}
+    .header h1{margin:0;font-size:18px}
+    .header nav button{margin-left:10px;padding:8px 12px;border-radius:8px;
+      border:1px solid transparent;background:transparent;cursor:pointer;}
+    .header nav button.active{background:var(--accent);color:white}
+    .container{flex:1;padding:20px;max-width:1100px;margin:0 auto}
+    .top{display:flex;gap:16px;margin-bottom:16px}
+    .card{background:var(--card);padding:16px;border-radius:10px;flex:1;
+      box-shadow:0 1px 3px rgba(15,23,42,0.04)}
+    .big{font-size:24px;margin:8px 0}
+    .small{font-size:16px;margin:6px 0}
+    .positive{color:var(--pos)}
+    .negative{color:var(--neg)}
+    .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    .chart-card{background:var(--card);padding:12px;border-radius:10px}
+    .form-card{background:var(--card);padding:12px;border-radius:10px}
+    .tx-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .tx-form input, .tx-form select{padding:8px;border-radius:8px;border:1px solid #e6eef8;min-width:150px}
+    .tx-form button{padding:8px 12px;border-radius:8px;background:var(--accent);color:white;border:none;cursor:pointer}
+    .transactions-page{display:grid;grid-template-columns: 360px 1fr;gap:16px}
+    .form-area{background:var(--card);padding:12px;border-radius:10px}
+    .list-area{background:var(--card);padding:12px;border-radius:10px}
+    .tx-table{width:100%;border-collapse:collapse}
+    .tx-table th, .tx-table td{padding:8px;text-align:left;border-bottom:1px solid #f1f5f9}
+    .tx-table button{margin-right:6px;padding:6px 8px;border-radius:6px;border:1px solid #e6eef8;background:transparent;cursor:pointer}
+    .footer{text-align:center;padding:12px 0;color:var(--muted);font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>Финансовый Дашборд</h1>
+      <nav>
+        <button id="btn-dashboard" class="active">Обзор</button>
+        <button id="btn-transactions">Транзакции</button>
+      </nav>
+    </header>
+
+    <main class="container">
+      <!-- Обзор -->
+      <div id="dashboard">
+        <section class="top">
+          <div class="card">
+            <h3>Баланс</h3>
+            <p id="balance" class="big">0 ₽</p>
+          </div>
+          <div class="card">
+            <h4>Доход</h4>
+            <p id="income" class="small positive">0 ₽</p>
+          </div>
+          <div class="card">
+            <h4>Расход</h4>
+            <p id="expense" class="small negative">0 ₽</p>
+          </div>
+        </section>
+
+        <section class="charts">
+          <div class="chart-card">
+            <h4>Расходы по категориям</h4>
+            <canvas id="catChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h4>Баланс по дням</h4>
+            <canvas id="lineChart"></canvas>
+          </div>
+        </section>
+
+        <section class="form-card">
+          <h3>Добавить транзакцию</h3>
+          <form id="add-form" class="tx-form">
+            <input id="title" placeholder="Название" required>
+            <input id="amount" type="number" placeholder="Сумма (+ доход, - расход)" required>
+            <select id="category">
+              <option>Еда</option>
+              <option>Транспорт</option>
+              <option>Развлечения</option>
+              <option>Зарплата</option>
+              <option>Коммуналка</option>
+              <option>Другое</option>
+            </select>
+            <input id="date" type="date" required>
+            <input id="note" placeholder="Заметка (необязательно)">
+            <button type="submit">Добавить</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- Транзакции -->
+      <div id="transactions" style="display:none;">
+        <section class="form-area">
+          <h3>Новая транзакция</h3>
+          <form id="add-form2" class="tx-form">
+            <input id="title2" placeholder="Название" required>
+            <input id="amount2" type="number" placeholder="Сумма" required>
+            <select id="category2">
+              <option>Еда</option>
+              <option>Транспорт</option>
+              <option>Развлечения</option>
+              <option>Зарплата</option>
+              <option>Коммуналка</option>
+              <option>Другое</option>
+            </select>
+            <input id="date2" type="date" required>
+            <input id="note2" placeholder="Заметка (необязательно)">
+            <button type="submit">Добавить</button>
+          </form>
+        </section>
+
+        <section class="list-area">
+          <h3>Все транзакции</h3>
+          <table class="tx-table" id="tx-table">
+            <thead>
+              <tr>
+                <th>Дата</th><th>Название</th><th>Категория</th><th>Сумма</th><th>Заметка</th><th>Действие</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">Сделано ❤️ для портфолио</footer>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const LS_KEY = "finance_ru_v1";
+    let transactions = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+
+    const balanceEl = document.getElementById("balance");
+    const incomeEl = document.getElementById("income");
+    const expenseEl = document.getElementById("expense");
+    const txTableBody = document.querySelector("#tx-table tbody");
+
+    let catChart, lineChart;
+
+    function save() {
+      localStorage.setItem(LS_KEY, JSON.stringify(transactions));
+    }
+
+    function render() {
+      const balance = transactions.reduce((s,t)=>s+t.amount,0);
+      const income = transactions.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+      const expense = transactions.filter(t=>t.amount<0).reduce((s,t)=>s+t.amount,0);
+
+      balanceEl.textContent = balance.toFixed(2)+" ₽";
+      incomeEl.textContent = income.toFixed(2)+" ₽";
+      expenseEl.textContent = Math.abs(expense).toFixed(2)+" ₽";
+
+      // диаграмма по категориям
+      const cats = ["Еда","Транспорт","Развлечения","Зарплата","Коммуналка","Другое"];
+      const catData = cats.map(c=>transactions.filter(t=>t.category===c).reduce((s,t)=>s+t.amount,0));
+      if(catChart) catChart.destroy();
+      catChart = new Chart(document.getElementById("catChart"), {
+        type:"pie",
+        data:{labels:cats, datasets:[{data:catData.map(Math.abs)}]}
+      });
+
+      // график баланса по времени
+      const map = {};
+      transactions.sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(t=>{
+        const d = t.date.slice(0,10);
+        map[d]=(map[d]||0)+t.amount;
+      });
+      let cum=0, labels=[], data=[];
+      for(const d of Object.keys(map)){
+        cum+=map[d]; labels.push(d); data.push(cum);
+      }
+      if(lineChart) lineChart.destroy();
+      lineChart = new Chart(document.getElementById("lineChart"), {
+        type:"line",
+        data:{labels,datasets:[{label:"Баланс",data}]}
+      });
+
+      // таблица
+      txTableBody.innerHTML="";
+      transactions.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach((t,i)=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML = `
+          <td>${new Date(t.date).toLocaleDateString("ru-RU")}</td>
+          <td>${t.title}</td>
+          <td>${t.category}</td>
+          <td class="${t.amount>=0?"positive":"negative"}">${t.amount.toFixed(2)}</td>
+          <td>${t.note||"-"}</td>
+          <td><button data-del="${i}">Удалить</button></td>`;
+        txTableBody.appendChild(tr);
+      });
+    }
+
+    function addTx(title, amount, category, date, note){
+      transactions.push({title,amount:Number(amount),category,date,note});
+      save(); render();
+    }
+
+    document.getElementById("add-form").addEventListener("submit",e=>{
+      e.preventDefault();
+      addTx(title.value, amount.value, category.value, date.value, note.value);
+      e.target.reset();
+    });
+    document.getElementById("add-form2").addEventListener("submit",e=>{
+      e.preventDefault();
+      addTx(title2.value, amount2.value, category2.value, date2.value, note2.value);
+      e.target.reset();
+    });
+
+    txTableBody.addEventListener("click",e=>{
+      if(e.target.dataset.del){
+        transactions.splice(e.target.dataset.del,1);
+        save(); render();
+      }
+    });
+
+    // переключение вкладок
+    const dashboard=document.getElementById("dashboard");
+    const transactionsDiv=document.getElementById("transactions");
+    const btnDashboard=document.getElementById("btn-dashboard");
+    const btnTransactions=document.getElementById("btn-transactions");
+
+    btnDashboard.onclick=()=>{
+      dashboard.style.display="block";
+      transactionsDiv.style.display="none";
+      btnDashboard.classList.add("active");
+      btnTransactions.classList.remove("active");
+    };
+    btnTransactions.onclick=()=>{
+      dashboard.style.display="none";
+      transactionsDiv.style.display="block";
+      btnDashboard.classList.remove("active");
+      btnTransactions.classList.add("active");
+    };
+
+    render();
+  </script>
+</body>
+</html>
